@@ -28,6 +28,15 @@
           <h3>Players (Course Handicaps)</h3>
           <p class="muted">Enter 4 players to start. (5-player swing supported later.)</p>
 
+          <div class="row">
+            <button id="btnLoadAccRoster" class="btn">Load ACC Roster</button>
+          </div>
+          <p class="muted">Loads saved ACC roster + restores your last-used 4-player selection when available.</p>
+          <details class="roster-details">
+            <summary>View ACC Roster</summary>
+            <div id="accRosterPreview" class="muted"></div>
+          </details>
+
           <div id="playersList" class="stack"></div>
           <button id="btnAddPlayer" class="btn">+ Add Player</button>
         </div>

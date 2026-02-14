@@ -3,6 +3,21 @@
 
 const LS_KEY = "friday_standard_game_v1";
 
+const DEFAULT_ACC_ROSTER = [
+  { id: "ray", name: "Ray", hcp: 10 },
+  { id: "demps", name: "Demps", hcp: 12 },
+  { id: "meyer", name: "Meyer", hcp: 16 },
+  { id: "hotz", name: "Hotz", hcp: 20 },
+  { id: "bj", name: "BJ", hcp: 8 },
+  { id: "mike", name: "Mike", hcp: 11 },
+  { id: "kevin", name: "Kevin", hcp: 13 },
+  { id: "chris", name: "Chris", hcp: 15 },
+  { id: "brian", name: "Brian", hcp: 17 },
+  { id: "scott", name: "Scott", hcp: 19 },
+  { id: "rob", name: "Rob", hcp: 21 },
+  { id: "dan", name: "Dan", hcp: 23 }
+];
+
 const state = loadState() ?? {
   setup: {
     players: [
@@ -15,6 +30,8 @@ const state = loadState() ?? {
     stakes: { nassau: 5, scotch: 2, dogs: 1 },
     dogsEnabled: false,
     holeHcpOrder: Array.from({ length: 18 }, (_, i) => i + 1), // default 1..18
+    accRoster: buildDefaultAccRoster(),
+    accLastUsedSelection: []
   },
   round: {
     started: false,
@@ -36,6 +53,8 @@ const roundPanel = document.getElementById("roundPanel");
 
 const playersList = document.getElementById("playersList");
 const btnAddPlayer = document.getElementById("btnAddPlayer");
+const btnLoadAccRoster = document.getElementById("btnLoadAccRoster");
+const accRosterPreview = document.getElementById("accRosterPreview");
 
 const teamA1 = document.getElementById("teamA1");
 const teamA2 = document.getElementById("teamA2");
@@ -86,6 +105,7 @@ btnAddPlayer.addEventListener("click", () => {
 });
 
 btnStart.addEventListener("click", () => {
+  updateLastUsedSelection();
   state.round.started = true;
   state.round.hole = 1;
   saveAndRender();
@@ -110,19 +130,24 @@ btnDemo.addEventListener("click", () => {
   saveAndRender();
 });
 
+btnLoadAccRoster.addEventListener("click", () => {
+  loadAccRosterIntoSetup();
+  saveAndRender();
+});
+
 toggleDogs.addEventListener("change", () => {
   state.setup.dogsEnabled = toggleDogs.checked;
   saveAndRender();
 });
 
-stakeNassau.addEventListener("input", () => { state.setup.stakes.nassau = numOr0(stakeNassau.value); saveAndRender(false); });
-stakeScotch.addEventListener("input", () => { state.setup.stakes.scotch = numOr0(stakeScotch.value); saveAndRender(false); });
-stakeDogs.addEventListener("input",   () => { state.setup.stakes.dogs = numOr0(stakeDogs.value); saveAndRender(false); });
+stakeNassau.addEventListener("input", () => { state.setup.stakes.nassau = numOr0(stakeNassau.value); saveAndRender(); });
+stakeScotch.addEventListener("input", () => { state.setup.stakes.scotch = numOr0(stakeScotch.value); saveAndRender(); });
+stakeDogs.addEventListener("input",   () => { state.setup.stakes.dogs = numOr0(stakeDogs.value); saveAndRender(); });
 
 hcpOrder.addEventListener("input", () => {
   const arr = parseOrder(hcpOrder.value);
   if (arr) state.setup.holeHcpOrder = arr;
-  saveAndRender(false);
+  saveAndRender();
 });
 
 btnPressAccept.addEventListener("click", () => {
@@ -163,6 +188,10 @@ function render() {
 }
 
 function renderSetup() {
+  accRosterPreview.textContent = state.setup.accRoster
+    .map(p => `${p.name} (HCP ${p.hcp})`)
+    .join(" • ");
+
   // players editor
   playersList.innerHTML = "";
   state.setup.players.forEach((p, idx) => {
@@ -182,7 +211,7 @@ function renderSetup() {
       const id = inp.dataset.pname;
       const p = state.setup.players.find(x => x.id === id);
       if (p) p.name = inp.value;
-      saveAndRender(false);
+      saveAndRender();
     });
   });
   playersList.querySelectorAll("input[data-phcp]").forEach(inp => {
@@ -190,7 +219,7 @@ function renderSetup() {
       const id = inp.dataset.phcp;
       const p = state.setup.players.find(x => x.id === id);
       if (p) p.hcp = numOr0(inp.value);
-      saveAndRender(false);
+      saveAndRender();
     });
   });
   playersList.querySelectorAll("button[data-del]").forEach(btn => {
@@ -213,10 +242,10 @@ function renderSetup() {
   setSelect(teamB2, state.setup.teams.B[1]);
 
   // on change
-  teamA1.onchange = () => { state.setup.teams.A[0] = teamA1.value || null; saveAndRender(false); };
-  teamA2.onchange = () => { state.setup.teams.A[1] = teamA2.value || null; saveAndRender(false); };
-  teamB1.onchange = () => { state.setup.teams.B[0] = teamB1.value || null; saveAndRender(false); };
-  teamB2.onchange = () => { state.setup.teams.B[1] = teamB2.value || null; saveAndRender(false); };
+  teamA1.onchange = () => { state.setup.teams.A[0] = teamA1.value || null; updateLastUsedSelection(); saveAndRender(); };
+  teamA2.onchange = () => { state.setup.teams.A[1] = teamA2.value || null; updateLastUsedSelection(); saveAndRender(); };
+  teamB1.onchange = () => { state.setup.teams.B[0] = teamB1.value || null; updateLastUsedSelection(); saveAndRender(); };
+  teamB2.onchange = () => { state.setup.teams.B[1] = teamB2.value || null; updateLastUsedSelection(); saveAndRender(); };
 
   // stakes
   stakeNassau.value = state.setup.stakes.nassau ?? "";
@@ -308,6 +337,35 @@ function renderRound() {
     calls: state.round.calls[hole] || {},
     derived
   }, null, 2);
+}
+
+function loadAccRosterIntoSetup() {
+  const roster = state.setup.accRoster?.length ? state.setup.accRoster : buildDefaultAccRoster();
+  state.setup.accRoster = roster;
+  state.setup.players = roster.map(p => ({
+    id: `acc-${p.id}`,
+    name: p.name,
+    hcp: p.hcp
+  }));
+
+  const validIds = new Set(state.setup.players.map(p => p.id));
+  const restored = (state.setup.accLastUsedSelection || []).filter(id => validIds.has(id));
+  const fallback = state.setup.players.slice(0, 4).map(p => p.id);
+  const picks = restored.length === 4 ? restored : fallback;
+
+  state.setup.teams = {
+    A: [picks[0] || null, picks[1] || null],
+    B: [picks[2] || null, picks[3] || null]
+  };
+  updateLastUsedSelection();
+}
+
+function updateLastUsedSelection() {
+  const picks = [...state.setup.teams.A, ...state.setup.teams.B];
+  if (picks.length !== 4 || picks.some(x => !x)) return;
+  if (picks.every(id => String(id).startsWith("acc-"))) {
+    state.setup.accLastUsedSelection = picks;
+  }
 }
 
 // ---------- DERIVED / SCORING HOOKS ----------
@@ -403,10 +461,35 @@ function saveState(s) {
 function loadState() {
   try {
     const v = localStorage.getItem(LS_KEY);
-    return v ? JSON.parse(v) : null;
+    const parsed = v ? JSON.parse(v) : null;
+    if (!parsed) return null;
+    parsed.setup ||= {};
+    parsed.setup.accRoster = normalizeAccRoster(parsed.setup.accRoster);
+    parsed.setup.accLastUsedSelection ||= [];
+    return parsed;
   } catch {
     return null;
   }
+}
+
+function normalizeAccRoster(roster) {
+  if (!Array.isArray(roster) || roster.length === 0) {
+    return buildDefaultAccRoster();
+  }
+  const normalized = roster
+    .filter(item => item && typeof item.name === "string")
+    .map(item => ({
+      id: String(item.id || item.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      name: String(item.name).trim(),
+      hcp: numOr0(item.hcp)
+    }))
+    .filter(item => item.id && item.name);
+
+  return normalized.length ? normalized : buildDefaultAccRoster();
+}
+
+function buildDefaultAccRoster() {
+  return DEFAULT_ACC_ROSTER.map(player => ({ ...player }));
 }
 function saveAndRender(doSave=true) {
   if (doSave) saveState(state);
