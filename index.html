@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Friday Standard Game</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">FRIDAY STANDARD GAME</div>
+      <div class="brand-sub">Big numbers. Fast entry. No nonsense.</div>
+    </div>
+    <div class="top-actions">
+      <button id="btnReset" class="btn ghost">Reset</button>
+      <button id="btnDemo" class="btn ghost">Load Demo</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- SETUP -->
+    <section id="setupPanel" class="panel">
+      <h2>Setup</h2>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Players (Course Handicaps)</h3>
+          <p class="muted">Enter 4 players to start. (5-player swing supported later.)</p>
+
+          <div id="playersList" class="stack"></div>
+          <button id="btnAddPlayer" class="btn">+ Add Player</button>
+        </div>
+
+        <div class="card">
+          <h3>Teams & Stakes</h3>
+
+          <label class="label">Teams</label>
+          <div class="row">
+            <select id="teamA1" class="input"></select>
+            <select id="teamA2" class="input"></select>
+          </div>
+          <div class="row">
+            <select id="teamB1" class="input"></select>
+            <select id="teamB2" class="input"></select>
+          </div>
+
+          <div class="divider"></div>
+
+          <label class="label">Stakes</label>
+          <div class="row">
+            <input id="stakeNassau" class="input" type="number" min="0" step="1" placeholder="Nassau $" />
+            <input id="stakeScotch" class="input" type="number" min="0" step="1" placeholder="Scotch $" />
+            <input id="stakeDogs" class="input" type="number" min="0" step="1" placeholder="Dogs $ (optional)" />
+          </div>
+
+          <div class="row">
+            <label class="toggle">
+              <input id="toggleDogs" type="checkbox" />
+              <span>Enable Dogs</span>
+            </label>
+          </div>
+
+          <div class="divider"></div>
+
+          <label class="label">Course Hole Handicap Order (1–18)</label>
+          <p class="muted">Default is 1..18. If your course differs, paste comma-separated indices.</p>
+          <textarea id="hcpOrder" class="input textarea" rows="3" placeholder="e.g. 11,3,17,1,13,7,..."></textarea>
+
+          <button id="btnStart" class="btn primary">Start Round</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROUND -->
+    <section id="roundPanel" class="panel hidden">
+      <div class="round-header">
+        <div>
+          <div class="big-title">Hole <span id="holeNum">1</span></div>
+          <div class="muted">Tap scores. Big numbers. Keep moving.</div>
+        </div>
+        <div class="round-nav">
+          <button id="btnPrevHole" class="btn">◀</button>
+          <button id="btnNextHole" class="btn">▶</button>
+        </div>
+      </div>
+
+      <!-- BIG SCOREBOARD -->
+      <section class="scoreboard">
+        <div class="score-tile">
+          <div class="tile-label">Nassau</div>
+          <div class="tile-value" id="nassauBig">—</div>
+          <div class="tile-sub" id="nassauSub">Front / Back / Day + Presses</div>
+        </div>
+
+        <div class="score-tile">
+          <div class="tile-label">Scotch</div>
+          <div class="tile-value" id="scotchBig">0</div>
+          <div class="tile-sub" id="scotchSub">Point diff (Team A minus Team B)</div>
+        </div>
+
+        <div class="score-tile" id="dogsTile">
+          <div class="tile-label">Dogs</div>
+          <div class="tile-value" id="dogsBig">—</div>
+          <div class="tile-sub" id="dogsSub">Silent unless asked / turn</div>
+        </div>
+      </section>
+
+      <!-- PRESS ALERT -->
+      <div id="pressAlert" class="alert hidden">
+        <div class="alert-title">PRESS AVAILABLE</div>
+        <div class="alert-body" id="pressText">A team is dormie or better. Press decision due before next tee.</div>
+        <div class="alert-actions">
+          <button id="btnPressAccept" class="btn primary">Accept Press</button>
+          <button id="btnPressDecline" class="btn danger">Decline</button>
+        </div>
+      </div>
+
+      <!-- SCORE ENTRY -->
+      <section class="card">
+        <h3>Gross Scores</h3>
+        <div id="scoreEntry" class="score-entry"></div>
+
+        <div class="divider"></div>
+
+        <h3>Scotch Calls (optional)</h3>
+        <div class="calls">
+          <button class="chip" data-call="prox">Prox</button>
+          <button class="chip" data-call="double_prox">Double Prox</button>
+          <button class="chip" data-call="sneak">Sneak</button>
+          <button class="chip" data-call="double_dickey">Double Dickey</button>
+          <button class="chip" data-call="eagle">Eagle</button>
+          <button id="btnClearCalls" class="chip ghost">Clear Calls</button>
+        </div>
+        <p class="muted">These are stored per hole. (Scotch engine hooks are ready.)</p>
+      </section>
+
+      <section class="card">
+        <h3>Status</h3>
+        <pre id="statusOut" class="status"></pre>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
